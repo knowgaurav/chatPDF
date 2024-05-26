@@ -39,8 +39,14 @@ def main():
       if query:
         docs = docsearch.similarity_search(query)
         response = chain.run(input_documents=docs, question=query)
-           
+
+        #If you want to keep track of your spending
+        with get_openai_callback() as cb:
+            response = chain.run(input_documents=docs, question=query ) 
+                
         st.write(response)
+        st.write("Cost of the query = ", cb)
+
     
 
 if __name__ == '__main__':
