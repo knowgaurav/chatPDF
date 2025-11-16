@@ -56,9 +56,19 @@ class Config:
     }
 
     LLM_PROVIDERS = {
+        'MegaLLM': ['gpt-5-mini', 'claude-haiku-4-5', 'gemini-2-5-flash'],
         'OpenAI': ['gpt-4', 'gpt-4-turbo-preview', 'gpt-3.5-turbo', 'gpt-3.5-turbo-16k'],
         'Ollama': ['llama3:8b', 'llama3:70b', 'mistral:7b', 'mixtral:8x7b', 'codellama:13b'],
         'HuggingFace': ['google/flan-t5-large', 'meta-llama/Llama-2-7b-chat-hf', 'mistralai/Mistral-7B-Instruct-v0.2']
+    }
+
+    # Model descriptions for better UX
+    MODEL_DESCRIPTIONS = {
+        'gpt-5-mini': '⚡ Fast and efficient GPT-5 mini model',
+        'claude-haiku-4-5': '🎯 Balanced Claude Haiku 4.5',
+        'gemini-2-5-flash': '🚀 Ultra-fast Gemini 2.5 Flash',
+        'gpt-4': '🧠 Most capable GPT-4 model',
+        'gpt-3.5-turbo': '💨 Fast and cost-effective',
     }
 
     EMBEDDING_MODELS = {
@@ -113,9 +123,13 @@ def init_session_state():
 
     # Settings
     if 'settings' not in st.session_state:
+        # Check if MegaLLM key is available
+        default_provider = 'MegaLLM' if os.getenv('MEGALLM_API_KEY') else 'OpenAI'
+        default_model = 'gpt-5-mini' if os.getenv('MEGALLM_API_KEY') else 'gpt-3.5-turbo'
+
         st.session_state.settings = {
-            'llm_provider': 'OpenAI',
-            'model': 'gpt-3.5-turbo',
+            'llm_provider': default_provider,
+            'model': default_model,
             'embedding_provider': 'OpenAI',
             'embedding_model': 'text-embedding-ada-002',
             'temperature': 0.7,
@@ -341,9 +355,59 @@ def process_query(question: str):
 # ============================================================================
 
 def render_sidebar():
-    """Render settings sidebar"""
+    """Render enhanced settings sidebar with professional styling"""
     with st.sidebar:
-        st.title("⚙️ Settings")
+        # Header with gradient effect
+        st.markdown("""
+        <style>
+        .sidebar-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 1.5rem;
+            border-radius: 10px;
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+        .sidebar-header h1 {
+            color: white;
+            font-size: 1.8rem;
+            margin: 0;
+            font-weight: 700;
+        }
+        .provider-badge {
+            background: #10b981;
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            display: inline-block;
+            margin-top: 0.5rem;
+        }
+        .warning-box {
+            background: #fef3c7;
+            border-left: 4px solid #f59e0b;
+            padding: 0.75rem;
+            border-radius: 4px;
+            margin: 0.5rem 0;
+        }
+        .success-box {
+            background: #d1fae5;
+            border-left: 4px solid #10b981;
+            padding: 0.75rem;
+            border-radius: 4px;
+            margin: 0.5rem 0;
+        }
+        .model-card {
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 0.75rem;
+            margin: 0.5rem 0;
+        }
+        </style>
+        <div class="sidebar-header">
+            <h1>⚙️ chatPDF Settings</h1>
+        </div>
+        """, unsafe_allow_html=True)
 
         # Document Management Section
         st.header("📄 Documents")
@@ -357,11 +421,18 @@ def render_sidebar():
 
             if selected_doc:
                 doc_info = st.session_state.documents[selected_doc]
-                st.caption(f"Type: {doc_info['type']}")
-                st.caption(f"Chunks: {doc_info.get('num_chunks', 'N/A')}")
-                st.caption(f"Uploaded: {doc_info.get('uploaded_at', 'N/A')}")
 
-                if st.button("🗑️ Delete Document", key="delete_doc"):
+                # Enhanced document info display
+                st.markdown(f"""
+                <div class="model-card">
+                    <strong>📋 {selected_doc}</strong><br>
+                    <small>Type: {doc_info['type'].upper()}</small><br>
+                    <small>Chunks: {doc_info.get('num_chunks', 'N/A')}</small><br>
+                    <small>Uploaded: {doc_info.get('uploaded_at', 'N/A')}</small>
+                </div>
+                """, unsafe_allow_html=True)
+
+                if st.button("🗑️ Delete Document", key="delete_doc", use_container_width=True):
                     del st.session_state.documents[selected_doc]
                     st.session_state.current_document = None
                     st.session_state.vector_store = None
@@ -369,38 +440,100 @@ def render_sidebar():
                     st.session_state.messages = []
                     st.rerun()
         else:
-            st.info("No documents uploaded")
+            st.info("📁 No documents uploaded yet")
 
         st.divider()
 
-        # LLM Settings
+        # LLM Settings with Enhanced UI
         st.header("🤖 LLM Configuration")
+
+        # Check API key availability
+        megallm_available = bool(os.getenv('MEGALLM_API_KEY'))
+        openai_available = bool(os.getenv('OPENAI_API_KEY'))
+
+        # Show API status
+        if megallm_available:
+            st.markdown("""
+            <div class="success-box">
+                ✅ <strong>MegaLLM Connected</strong><br>
+                <small>Access to GPT, Claude, Gemini models</small>
+            </div>
+            """, unsafe_allow_html=True)
 
         llm_provider = st.selectbox(
             "LLM Provider",
             list(Config.LLM_PROVIDERS.keys()),
             index=list(Config.LLM_PROVIDERS.keys()).index(st.session_state.settings['llm_provider']),
-            help="Select the LLM provider"
+            help="💡 MegaLLM provides unified access to multiple LLM providers"
         )
         st.session_state.settings['llm_provider'] = llm_provider
 
+        # Model selection with descriptions
+        available_models = Config.LLM_PROVIDERS[llm_provider]
         model = st.selectbox(
             "Model",
-            Config.LLM_PROVIDERS[llm_provider],
-            index=Config.LLM_PROVIDERS[llm_provider].index(st.session_state.settings['model'])
-                if st.session_state.settings['model'] in Config.LLM_PROVIDERS[llm_provider]
+            available_models,
+            index=available_models.index(st.session_state.settings['model'])
+                if st.session_state.settings['model'] in available_models
                 else 0,
-            help="Select the model to use"
+            help="Select the AI model to use for answering questions",
+            format_func=lambda x: f"{x} {Config.MODEL_DESCRIPTIONS.get(x, '')}"
         )
         st.session_state.settings['model'] = model
 
-        # Show warning for Ollama
-        if llm_provider == 'Ollama':
-            st.warning("⚠️ Ollama requires local installation. Visit [ollama.ai](https://ollama.ai)")
+        # Provider-specific information
+        if llm_provider == 'MegaLLM':
+            if not megallm_available:
+                st.markdown("""
+                <div class="warning-box">
+                    ⚠️ <strong>MegaLLM API Key Required</strong><br>
+                    <small>1. Get key from <a href="https://megallm.io/dashboard" target="_blank">megallm.io</a></small><br>
+                    <small>2. Add to .env: MEGALLM_API_KEY=mega_xxx</small><br>
+                    <small>3. Restart the app</small>
+                </div>
+                """, unsafe_allow_html=True)
+            else:
+                # Show model info
+                model_info = {
+                    'gpt-5-mini': ('Fast & Efficient', '⚡', '#3b82f6'),
+                    'claude-haiku-4-5': ('Balanced', '🎯', '#8b5cf6'),
+                    'gemini-2-5-flash': ('Ultra Fast', '🚀', '#10b981')
+                }
 
-        # Show warning for HuggingFace
-        if llm_provider == 'HuggingFace':
-            st.warning("⚠️ HuggingFace models require additional setup")
+                if model in model_info:
+                    label, icon, color = model_info[model]
+                    st.markdown(f"""
+                    <div class="model-card">
+                        {icon} <strong>{model}</strong>
+                        <span style="background:{color};color:white;padding:2px 8px;border-radius:10px;font-size:0.7rem;margin-left:0.5rem;">{label}</span>
+                    </div>
+                    """, unsafe_allow_html=True)
+
+        elif llm_provider == 'Ollama':
+            st.markdown("""
+            <div class="warning-box">
+                ⚠️ <strong>Ollama Setup Required</strong><br>
+                <small>Local LLM - Zero API costs!</small><br>
+                <small>Visit <a href="https://ollama.ai" target="_blank">ollama.ai</a> to install</small>
+            </div>
+            """, unsafe_allow_html=True)
+
+        elif llm_provider == 'HuggingFace':
+            st.markdown("""
+            <div class="warning-box">
+                ⚠️ <strong>HuggingFace Models</strong><br>
+                <small>Requires additional configuration</small>
+            </div>
+            """, unsafe_allow_html=True)
+
+        elif llm_provider == 'OpenAI':
+            if not openai_available:
+                st.markdown("""
+                <div class="warning-box">
+                    ⚠️ <strong>OpenAI API Key Required</strong><br>
+                    <small>Add to .env: OPENAI_API_KEY=sk-xxx</small>
+                </div>
+                """, unsafe_allow_html=True)
 
         st.divider()
 
@@ -890,16 +1023,78 @@ def main():
     # Render sidebar
     render_sidebar()
 
-    # Main content
-    st.title("📚 chatPDF - Advanced RAG System")
-    st.caption("Multi-LLM Support | Advanced RAG | Cost Tracking | Model Comparison")
+    # Professional Main Header
+    st.markdown("""
+    <style>
+    .main-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        padding: 2rem;
+        border-radius: 15px;
+        text-align: center;
+        margin-bottom: 2rem;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    .main-header h1 {
+        color: white;
+        font-size: 2.5rem;
+        margin: 0;
+        font-weight: 800;
+    }
+    .main-header p {
+        color: #e0e7ff;
+        font-size: 1.1rem;
+        margin: 0.5rem 0 0 0;
+    }
+    .feature-badge {
+        background: rgba(255,255,255,0.2);
+        color: white;
+        padding: 0.4rem 1rem;
+        border-radius: 20px;
+        margin: 0.5rem 0.25rem;
+        display: inline-block;
+        font-size: 0.85rem;
+    }
+    </style>
+    <div class="main-header">
+        <h1>📚 chatPDF</h1>
+        <p>Advanced RAG-Powered Document Intelligence</p>
+        <div style="margin-top:1rem;">
+            <span class="feature-badge">🤖 Multi-LLM</span>
+            <span class="feature-badge">⚡ MegaLLM Powered</span>
+            <span class="feature-badge">🔍 Advanced RAG</span>
+            <span class="feature-badge">💰 Cost Tracking</span>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
 
-    # Check for OpenAI API key
-    if not os.getenv("OPENAI_API_KEY"):
-        st.error("⚠️ OPENAI_API_KEY not found in environment variables")
-        st.info("Please set your OpenAI API key in .env file")
-        st.code("OPENAI_API_KEY=your-api-key-here", language="bash")
+    # Check for API keys with user-friendly messages
+    megallm_key = os.getenv("MEGALLM_API_KEY")
+    openai_key = os.getenv("OPENAI_API_KEY")
+
+    if not megallm_key and not openai_key:
+        st.error("⚠️ No API keys found")
+        st.markdown("""
+        ### Quick Setup Options:
+
+        **Option 1: MegaLLM (Recommended)**
+        - ✅ Single API key for GPT, Claude, and Gemini
+        - 🔗 Get key from [megallm.io/dashboard](https://megallm.io/dashboard)
+        - 📝 Add to `.env`: `MEGALLM_API_KEY=mega_your_key_here`
+
+        **Option 2: OpenAI Direct**
+        - 🔑 OpenAI API key only
+        - 🔗 Get key from [platform.openai.com](https://platform.openai.com/api-keys)
+        - 📝 Add to `.env`: `OPENAI_API_KEY=sk_your_key_here`
+
+        After adding your key, restart the application.
+        """)
         st.stop()
+
+    # Show which provider is active
+    if megallm_key:
+        st.success("✅ MegaLLM Active - Access to GPT, Claude, and Gemini models")
+    elif openai_key:
+        st.info("ℹ️ OpenAI Active - Using direct OpenAI API")
 
     # Create tabs
     tab1, tab2, tab3 = st.tabs(["📤 Upload & Chat", "🚀 Advanced Features", "ℹ️ About"])
@@ -917,48 +1112,120 @@ def main():
         render_advanced_features()
 
     with tab3:
-        st.header("About chatPDF")
-        st.write("""
-        **chatPDF** is an advanced document question-answering system built with:
+        st.header("📖 About chatPDF")
 
-        - **Multi-LLM Support**: OpenAI, Ollama, HuggingFace
-        - **Advanced RAG**: Hybrid search, re-ranking, compression
-        - **Multiple Formats**: PDF, DOCX, TXT, MD
-        - **Cost Tracking**: Monitor API usage and costs
-        - **Model Comparison**: Compare different models side-by-side
+        col1, col2 = st.columns([1, 1])
 
-        ### Features Implemented:
+        with col1:
+            st.subheader("🎯 Overview")
+            st.write("""
+            **chatPDF** is a production-ready RAG (Retrieval-Augmented Generation) system for intelligent document Q&A.
 
-        ✅ Document Upload (PDF, DOCX, TXT, MD)
-        ✅ Chat Interface with streaming
-        ✅ Source Citations
-        ✅ Settings Sidebar (LLM, Embeddings, RAG)
-        ✅ Cost & Token Tracking
-        ✅ Chat History Viewer
-        ✅ Document Management
-        ✅ Model Comparison Tool
-        ✅ Session State Management
+            Built with cutting-edge AI technology to provide accurate, context-aware answers from your documents.
+            """)
 
-        ### Coming Soon:
+            st.subheader("✨ Key Features")
+            st.markdown("""
+            - 🤖 **MegaLLM Integration** - Access GPT, Claude, Gemini with one API key
+            - 📚 **Multi-Format Support** - PDF, DOCX, TXT, MD
+            - 🔍 **Advanced RAG Pipeline** - Hybrid search, re-ranking, compression
+            - 💰 **Cost Tracking** - Real-time usage and cost monitoring
+            - ⚡ **Streaming Responses** - Token-by-token generation
+            - 📊 **Model Comparison** - Test multiple models side-by-side
+            - 🎨 **Professional UI** - Clean, interactive interface
+            """)
 
-        🔜 Hybrid Search (BM25 + Semantic)
-        🔜 Re-ranking with Cross-Encoders
-        🔜 Contextual Compression
-        🔜 Ollama Integration
-        🔜 HuggingFace Integration
-        🔜 Multi-Query Retrieval
+        with col2:
+            st.subheader("🚀 MegaLLM Models")
+            st.markdown("""
+            **Available via MegaLLM:**
 
-        ### Tech Stack:
+            **⚡ gpt-5-mini**
+            - Fast and efficient
+            - Best for quick queries
+            - Low cost
 
-        - **Framework**: Streamlit
-        - **LLM Framework**: LangChain
-        - **Vector Store**: FAISS
-        - **LLM Providers**: OpenAI, Ollama, HuggingFace
-        - **Embeddings**: OpenAI, HuggingFace
+            **🎯 claude-haiku-4-5**
+            - Balanced performance
+            - Detailed analysis
+            - Medium cost
 
+            **🚀 gemini-2-5-flash**
+            - Ultra-fast responses
+            - Real-time chat
+            - Very low cost
+            """)
+
+            st.info("💡 Get your MegaLLM API key at [megallm.io/dashboard](https://megallm.io/dashboard)")
+
+        st.divider()
+
+        col1, col2 = st.columns([1, 1])
+
+        with col1:
+            st.subheader("🛠️ Tech Stack")
+            st.markdown("""
+            - **Framework**: Streamlit 1.35+
+            - **LLM Framework**: LangChain 0.3+
+            - **Vector Store**: FAISS
+            - **LLM Providers**: MegaLLM, OpenAI, Ollama, HuggingFace
+            - **Embeddings**: OpenAI, HuggingFace, Sentence Transformers
+            - **Search**: BM25 + Semantic (Hybrid)
+            - **Database**: SQLite + SQLAlchemy
+            """)
+
+        with col2:
+            st.subheader("📋 Implementation Status")
+            st.markdown("""
+            ✅ Document Upload & Processing
+            ✅ MegaLLM Integration
+            ✅ Chat Interface with Streaming
+            ✅ Source Citations
+            ✅ Cost & Token Tracking
+            ✅ Chat History
+            ✅ Professional UI
+            ✅ Settings Management
+            🔜 Full RAG Pipeline (Hybrid, Re-ranking)
+            🔜 Ollama Local LLMs
+            🔜 Advanced Analytics
+            """)
+
+        st.divider()
+
+        st.subheader("📚 Documentation")
+        doc_col1, doc_col2, doc_col3 = st.columns(3)
+
+        with doc_col1:
+            st.markdown("""
+            **Quick Start**
+            - [MegaLLM Quickstart](./MEGALLM_QUICKSTART.md)
+            - [README](./README.md)
+            - [Docker Setup](./DOCKER_SETUP.md)
+            """)
+
+        with doc_col2:
+            st.markdown("""
+            **Integration Guides**
+            - [MegaLLM Integration](./MEGALLM_INTEGRATION.md)
+            - [Generic API Provider](./GENERIC_API_PROVIDER.md)
+            - [Implementation Status](./IMPLEMENTATION_STATUS.md)
+            """)
+
+        with doc_col3:
+            st.markdown("""
+            **Architecture**
+            - [High-Level Design (HLD)](./HLD.md)
+            - [Low-Level Design (LLD)](./LLD.md)
+            - [Project Summary](./PROJECT_SUMMARY.md)
+            """)
+
+        st.divider()
+
+        st.markdown("""
         ---
+        **Built with ❤️ focusing on LLM concepts, RAG patterns, and practical AI/ML applications.**
 
-        Built with ❤️ for learning advanced RAG techniques
+        🔗 GitHub: [knowgaurav/chatPDF](https://github.com/knowgaurav/chatPDF)
         """)
 
         st.subheader("Quick Start Guide")
