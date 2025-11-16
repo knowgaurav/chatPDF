@@ -51,7 +51,19 @@ class Settings(BaseSettings):
         default="./data/models/huggingface",
         description="HuggingFace model cache directory"
     )
-    
+
+    # =========================================================================
+    # MegaLLM Configuration (Unified API for Multiple LLMs)
+    # =========================================================================
+    MEGALLM_API_KEY: Optional[str] = Field(
+        default=None,
+        description="MegaLLM API key for accessing GPT, Claude, Gemini, and other models"
+    )
+    MEGALLM_BASE_URL: str = Field(
+        default="https://ai.megallm.io/v1",
+        description="MegaLLM API base URL"
+    )
+
     # =========================================================================
     # File Storage Configuration
     # =========================================================================

@@ -22,6 +22,11 @@ from ..providers.base_provider import (
 from ..providers.openai_provider import OpenAIProvider
 from ..providers.ollama_provider import OllamaProvider
 from ..providers.huggingface_provider import HuggingFaceProvider
+from ..providers.generic_api_provider import (
+    GenericAPIProvider,
+    APIConfig,
+    get_predefined_apis
+)
 
 logger = logging.getLogger(__name__)
 
@@ -33,15 +38,22 @@ class LLMService:
 
     # Model to provider mapping
     MODEL_PROVIDER_MAP = {
+        # OpenAI direct
         "gpt-4": "openai",
         "gpt-4-turbo": "openai",
         "gpt-3.5-turbo": "openai",
+        # Ollama local models
         "llama3": "ollama",
         "llama2": "ollama",
         "mistral": "ollama",
         "codellama": "ollama",
         "gemma": "ollama",
         "phi": "ollama",
+        # MegaLLM models via generic provider
+        "MegaLLM": "generic",
+        "gpt-5-mini": "generic",
+        "claude-haiku-4-5": "generic",
+        "gemini-2-5-flash": "generic",
     }
 
     def __init__(self, config: Optional[Dict[str, Any]] = None):
@@ -98,6 +110,40 @@ class LLMService:
             self.logger.info("HuggingFace provider initialized")
         except Exception as e:
             self.logger.warning(f"Failed to initialize HuggingFace provider: {e}")
+
+        # Generic API Provider (MegaLLM, etc.)
+        try:
+            api_configs = self._load_generic_api_configs()
+            if api_configs:
+                self.providers["generic"] = GenericAPIProvider(api_configs)
+                self.logger.info(f"Generic API provider initialized with {len(api_configs)} configurations")
+        except Exception as e:
+            self.logger.warning(f"Failed to initialize Generic API provider: {e}")
+
+    def _load_generic_api_configs(self) -> List[APIConfig]:
+        """Load generic API configurations from environment and config"""
+        configs = []
+
+        # Get predefined configs
+        predefined = get_predefined_apis()
+
+        # MegaLLM configurations
+        megallm_key = os.getenv("MEGALLM_API_KEY")
+        if megallm_key:
+            # Only configure the 3 requested models
+            for model_name in ["MegaLLM GPT-5 Mini", "MegaLLM Claude Haiku 4.5", "MegaLLM Gemini 2.5 Flash"]:
+                if model_name in predefined:
+                    config = predefined[model_name]
+                    config.api_key = megallm_key
+                    configs.append(config)
+                    self.logger.info(f"Configured {model_name}")
+
+        # Add custom API configs from self.config if provided
+        custom_apis = self.config.get("custom_apis", [])
+        for custom_config in custom_apis:
+            configs.append(APIConfig(**custom_config))
+
+        return configs
 
     def _get_provider(self, model: str) -> Optional[str]:
         """
