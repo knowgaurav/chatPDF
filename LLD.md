@@ -1,138 +1,65 @@
-# Low-Level Design (LLD) - Advanced chatPDF System
+# Low-Level Design (LLD) - chatPDF System (Simplified, RAG-Focused)
 
 ## Table of Contents
 1. [Project Structure](#1-project-structure)
 2. [Database Schema](#2-database-schema)
-3. [API Specifications](#3-api-specifications)
-4. [Module Designs](#4-module-designs)
-5. [Class Diagrams](#5-class-diagrams)
-6. [Sequence Diagrams](#6-sequence-diagrams)
-7. [Configuration Management](#7-configuration-management)
-8. [Error Handling](#8-error-handling)
-9. [Testing Strategy](#9-testing-strategy)
+3. [Core Module Designs](#3-core-module-designs)
+4. [Class Diagrams](#4-class-diagrams)
+5. [Configuration Management](#5-configuration-management)
+6. [Data Models](#6-data-models)
+7. [RAG Pipeline Details](#7-rag-pipeline-details)
+8. [Testing Strategy](#8-testing-strategy)
 
 ---
 
-## 1. Project Structure
+## 1. Project Structure (Simplified)
 
 ```
 chatPDF/
-├── backend/
-│   ├── app/
-│   │   ├── __init__.py                 # Flask app factory
-│   │   ├── api/
-│   │   │   ├── __init__.py
-│   │   │   ├── routes/
-│   │   │   │   ├── __init__.py
-│   │   │   │   ├── documents.py        # Document endpoints
-│   │   │   │   ├── chat.py             # Chat endpoints
-│   │   │   │   ├── models.py           # Model management endpoints
-│   │   │   │   ├── health.py           # Health check endpoints
-│   │   │   │   └── auth.py             # Authentication endpoints
-│   │   │   ├── schemas/
-│   │   │   │   ├── __init__.py
-│   │   │   │   ├── document.py         # Document Pydantic models
-│   │   │   │   ├── chat.py             # Chat Pydantic models
-│   │   │   │   └── user.py             # User Pydantic models
-│   │   │   └── middleware/
-│   │   │       ├── __init__.py
-│   │   │       ├── auth.py             # JWT authentication
-│   │   │       ├── rate_limit.py       # Rate limiting
-│   │   │       └── error_handler.py    # Global error handling
-│   │   ├── models/
-│   │   │   ├── __init__.py
-│   │   │   ├── user.py                 # User SQLAlchemy model
-│   │   │   ├── document.py             # Document SQLAlchemy model
-│   │   │   ├── chat.py                 # Chat history SQLAlchemy model
-│   │   │   └── session.py              # Session SQLAlchemy model
-│   │   ├── services/
-│   │   │   ├── __init__.py
-│   │   │   ├── document_service.py     # Document processing
-│   │   │   ├── rag_service.py          # RAG pipeline
-│   │   │   ├── llm_service.py          # LLM management
-│   │   │   ├── vector_service.py       # Vector store operations
-│   │   │   ├── embedding_service.py    # Embedding generation
-│   │   │   ├── chat_service.py         # Chat/conversation management
-│   │   │   └── search_service.py       # Hybrid search
-│   │   └── utils/
-│   │       ├── __init__.py
-│   │       ├── logger.py               # Logging configuration
-│   │       ├── validators.py           # Input validation
-│   │       ├── text_processing.py      # Text utilities
-│   │       └── file_utils.py           # File operations
-│   ├── config/
+├── src/
+│   ├── services/                       # Core LLM/RAG services
 │   │   ├── __init__.py
-│   │   ├── config.py                   # Configuration classes
-│   │   └── settings.yaml               # Default settings
-│   ├── tests/
+│   │   ├── document_service.py         # Document processing
+│   │   ├── rag_service.py              # RAG pipeline (CORE)
+│   │   ├── llm_service.py              # LLM providers (CORE)
+│   │   ├── vector_service.py           # Vector store & embeddings (CORE)
+│   │   ├── chat_service.py             # Conversation memory
+│   │   └── search_service.py           # Hybrid search (BM25 + semantic)
+│   ├── models/                         # Database models
 │   │   ├── __init__.py
-│   │   ├── conftest.py                 # Pytest fixtures
-│   │   ├── test_api/
-│   │   │   ├── test_documents.py
-│   │   │   └── test_chat.py
-│   │   ├── test_services/
-│   │   │   ├── test_rag_service.py
-│   │   │   └── test_llm_service.py
-│   │   └── test_utils/
-│   ├── migrations/                      # Alembic migrations
-│   │   └── versions/
-│   ├── requirements.txt                 # Core dependencies
-│   ├── requirements-dev.txt             # Development dependencies
-│   ├── requirements-local.txt           # Local LLM dependencies
-│   └── run.py                          # Application entry point
-├── frontend/
-│   ├── react-app/
-│   │   ├── src/
-│   │   │   ├── components/
-│   │   │   │   ├── Chat/
-│   │   │   │   │   ├── ChatWindow.tsx
-│   │   │   │   │   ├── MessageList.tsx
-│   │   │   │   │   └── InputBox.tsx
-│   │   │   │   ├── Documents/
-│   │   │   │   │   ├── DocumentUpload.tsx
-│   │   │   │   │   ├── DocumentList.tsx
-│   │   │   │   │   └── DocumentViewer.tsx
-│   │   │   │   ├── Settings/
-│   │   │   │   │   ├── ModelSelector.tsx
-│   │   │   │   │   └── RAGConfig.tsx
-│   │   │   │   └── Common/
-│   │   │   │       ├── Header.tsx
-│   │   │   │       └── Sidebar.tsx
-│   │   │   ├── services/
-│   │   │   │   ├── api.ts
-│   │   │   │   └── websocket.ts
-│   │   │   ├── store/
-│   │   │   │   ├── chatStore.ts
-│   │   │   │   └── documentStore.ts
-│   │   │   ├── types/
-│   │   │   │   └── index.ts
-│   │   │   ├── App.tsx
-│   │   │   └── main.tsx
-│   │   ├── package.json
-│   │   └── tsconfig.json
-│   └── streamlit/
-│       └── app.py                      # Enhanced Streamlit app
+│   │   ├── database.py                 # SQLite connection
+│   │   ├── document.py                 # Document metadata model
+│   │   └── chat.py                     # Chat history model
+│   ├── utils/                          # Utilities
+│   │   ├── __init__.py
+│   │   ├── logger.py                   # Logging setup
+│   │   ├── text_processing.py          # Text chunking, cleaning
+│   │   └── cost_tracker.py             # Track API costs
+│   ├── config/                         # Configuration
+│   │   ├── __init__.py
+│   │   └── settings.py                 # Centralized config
+│   └── providers/                      # LLM provider implementations
+│       ├── __init__.py
+│       ├── base_provider.py            # Abstract base class
+│       ├── openai_provider.py          # OpenAI integration
+│       ├── ollama_provider.py          # Ollama integration
+│       └── huggingface_provider.py     # HuggingFace integration
 ├── data/
 │   ├── uploads/                        # Uploaded documents
-│   ├── vector_stores/                  # Persisted vector indices
-│   └── databases/                      # SQLite database (dev)
-├── docs/
-│   ├── API.md                          # API documentation
-│   ├── DEPLOYMENT.md                   # Deployment guide
-│   └── USER_GUIDE.md                   # User manual
+│   ├── vector_stores/                  # FAISS indices
+│   └── chatpdf.db                      # SQLite database
+├── tests/
+│   ├── __init__.py
+│   ├── conftest.py                     # Pytest fixtures
+│   ├── test_rag_service.py             # RAG pipeline tests
+│   ├── test_llm_service.py             # LLM provider tests
+│   └── test_vector_service.py          # Vector search tests
 ├── logs/                               # Application logs
-├── scripts/
-│   ├── init_db.py                      # Database initialization
-│   ├── migrate_data.py                 # Data migration
-│   └── seed_data.py                    # Seed test data
-├── docker/
-│   ├── Dockerfile.backend
-│   ├── Dockerfile.frontend
-│   └── Dockerfile.ollama
-├── .env.example                        # Environment variables template
+├── app.py                              # Main Streamlit application
+├── requirements.txt                    # Python dependencies
+├── .env.example                        # Environment template
 ├── .gitignore
-├── docker-compose.yml                  # Multi-container setup
-├── docker-compose.dev.yml              # Development override
+├── Dockerfile                          # Optional containerization
 ├── HLD.md                              # High-Level Design
 ├── LLD.md                              # Low-Level Design (this file)
 └── README.md                           # Project documentation
@@ -140,610 +67,122 @@ chatPDF/
 
 ---
 
-## 2. Database Schema
+## 2. Database Schema (SQLite - Simplified)
 
 ### 2.1 Entity Relationship Diagram
 
 ```
-┌─────────────────┐
-│     users       │
-├─────────────────┤
-│ id (PK)         │
-│ username        │
-│ email           │
-│ password_hash   │
-│ api_key         │
-│ created_at      │
-│ updated_at      │
-└─────────────────┘
-        │
-        │ 1:N
-        │
-        ▼
-┌─────────────────┐
-│   documents     │
-├─────────────────┤
-│ id (PK)         │
-│ user_id (FK)    │
-│ filename        │
-│ file_path       │
-│ file_type       │
-│ file_size       │
-│ status          │
-│ num_chunks      │
-│ vector_index_id │
-│ metadata        │
-│ created_at      │
-│ updated_at      │
-└─────────────────┘
-        │
-        │ 1:N
-        │
-        ▼
-┌─────────────────┐
-│  chat_sessions  │
-├─────────────────┤
-│ id (PK)         │
-│ user_id (FK)    │
-│ document_id (FK)│
-│ title           │
-│ created_at      │
-│ updated_at      │
-└─────────────────┘
-        │
-        │ 1:N
-        │
-        ▼
-┌─────────────────┐
-│  chat_messages  │
-├─────────────────┤
-│ id (PK)         │
-│ session_id (FK) │
-│ role            │
-│ content         │
-│ metadata        │
-│ tokens_used     │
-│ cost            │
-│ created_at      │
-└─────────────────┘
+┌─────────────────────┐
+│     documents       │
+├─────────────────────┤
+│ id (PK)             │
+│ filename            │
+│ file_path           │
+│ file_type           │
+│ file_size           │
+│ num_chunks          │
+│ num_pages           │
+│ embedding_model     │
+│ index_path          │
+│ created_at          │
+└─────────────────────┘
+         │
+         │ 1:N
+         │
+         ▼
+┌─────────────────────┐
+│   chat_messages     │
+├─────────────────────┤
+│ id (PK)             │
+│ document_id (FK)    │
+│ role                │
+│ content             │
+│ sources (JSON)      │
+│ model_used          │
+│ tokens_used         │
+│ cost                │
+│ latency_ms          │
+│ created_at          │
+└─────────────────────┘
 
-┌─────────────────┐
-│ vector_indices  │
-├─────────────────┤
-│ id (PK)         │
-│ document_id (FK)│
-│ index_type      │
-│ index_path      │
-│ dimension       │
-│ num_vectors     │
-│ embedding_model │
-│ created_at      │
-└─────────────────┘
-
-┌─────────────────┐
-│ usage_analytics │
-├─────────────────┤
-│ id (PK)         │
-│ user_id (FK)    │
-│ endpoint        │
-│ method          │
-│ tokens_used     │
-│ cost            │
-│ latency_ms      │
-│ status_code     │
-│ timestamp       │
-└─────────────────┘
+┌─────────────────────┐
+│ query_analytics     │
+├─────────────────────┤
+│ id (PK)             │
+│ query               │
+│ model               │
+│ embedding_model     │
+│ rag_strategy        │
+│ tokens_used         │
+│ cost                │
+│ latency_ms          │
+│ num_results         │
+│ timestamp           │
+└─────────────────────┘
 ```
 
 ### 2.2 Table Definitions
 
-#### 2.2.1 users
-```sql
-CREATE TABLE users (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    username VARCHAR(50) UNIQUE NOT NULL,
-    email VARCHAR(100) UNIQUE NOT NULL,
-    password_hash VARCHAR(255) NOT NULL,
-    api_key VARCHAR(100) UNIQUE,
-    is_active BOOLEAN DEFAULT TRUE,
-    role VARCHAR(20) DEFAULT 'user',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE INDEX idx_users_email ON users(email);
-CREATE INDEX idx_users_api_key ON users(api_key);
-```
-
-#### 2.2.2 documents
+#### 2.2.1 documents
 ```sql
 CREATE TABLE documents (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
-    filename VARCHAR(255) NOT NULL,
-    file_path VARCHAR(500) NOT NULL,
-    file_type VARCHAR(50) NOT NULL,
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    filename TEXT NOT NULL,
+    file_path TEXT NOT NULL,
+    file_type TEXT NOT NULL,
     file_size INTEGER NOT NULL,
-    status VARCHAR(20) DEFAULT 'processing',  -- processing, completed, failed
     num_chunks INTEGER,
     num_pages INTEGER,
-    vector_index_id UUID,
-    metadata JSONB,
-    error_message TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    embedding_model TEXT NOT NULL,  -- Model used for embeddings
+    index_path TEXT,  -- Path to FAISS index file
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX idx_documents_user_id ON documents(user_id);
-CREATE INDEX idx_documents_status ON documents(status);
+CREATE INDEX idx_documents_filename ON documents(filename);
 CREATE INDEX idx_documents_created_at ON documents(created_at DESC);
 ```
 
-#### 2.2.3 chat_sessions
-```sql
-CREATE TABLE chat_sessions (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
-    document_id UUID REFERENCES documents(id) ON DELETE SET NULL,
-    title VARCHAR(255),
-    config JSONB,  -- LLM model, RAG settings, etc.
-    is_active BOOLEAN DEFAULT TRUE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE INDEX idx_chat_sessions_user_id ON chat_sessions(user_id);
-CREATE INDEX idx_chat_sessions_document_id ON chat_sessions(document_id);
-```
-
-#### 2.2.4 chat_messages
+#### 2.2.2 chat_messages
 ```sql
 CREATE TABLE chat_messages (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    session_id UUID REFERENCES chat_sessions(id) ON DELETE CASCADE,
-    role VARCHAR(20) NOT NULL,  -- user, assistant, system
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    document_id INTEGER REFERENCES documents(id) ON DELETE CASCADE,
+    role TEXT NOT NULL,  -- 'user' or 'assistant'
     content TEXT NOT NULL,
-    sources JSONB,  -- Source attribution
-    metadata JSONB,
+    sources TEXT,  -- JSON string with source citations
+    model_used TEXT,  -- LLM model name
     tokens_used INTEGER,
-    cost DECIMAL(10, 6),
+    cost REAL,
     latency_ms INTEGER,
-    model_used VARCHAR(100),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX idx_chat_messages_session_id ON chat_messages(session_id);
-CREATE INDEX idx_chat_messages_created_at ON chat_messages(created_at);
+CREATE INDEX idx_chat_messages_document_id ON chat_messages(document_id);
+CREATE INDEX idx_chat_messages_created_at ON chat_messages(created_at DESC);
 ```
 
-#### 2.2.5 vector_indices
+#### 2.2.3 query_analytics
 ```sql
-CREATE TABLE vector_indices (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    document_id UUID REFERENCES documents(id) ON DELETE CASCADE,
-    index_type VARCHAR(50) NOT NULL,  -- faiss, chromadb
-    index_path VARCHAR(500) NOT NULL,
-    dimension INTEGER NOT NULL,
-    num_vectors INTEGER NOT NULL,
-    embedding_model VARCHAR(100) NOT NULL,
-    index_config JSONB,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE INDEX idx_vector_indices_document_id ON vector_indices(document_id);
-```
-
-#### 2.2.6 usage_analytics
-```sql
-CREATE TABLE usage_analytics (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID REFERENCES users(id) ON DELETE SET NULL,
-    session_id UUID,
-    endpoint VARCHAR(100),
-    method VARCHAR(10),
+CREATE TABLE query_analytics (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    query TEXT NOT NULL,
+    model TEXT NOT NULL,
+    embedding_model TEXT,
+    rag_strategy TEXT,  -- 'hybrid', 'semantic', 'keyword', 're-ranked', etc.
     tokens_used INTEGER,
-    cost DECIMAL(10, 6),
+    cost REAL,
     latency_ms INTEGER,
-    status_code INTEGER,
-    error_type VARCHAR(50),
+    num_results INTEGER,
     timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX idx_usage_analytics_user_id ON usage_analytics(user_id);
-CREATE INDEX idx_usage_analytics_timestamp ON usage_analytics(timestamp DESC);
+CREATE INDEX idx_query_analytics_timestamp ON query_analytics(timestamp DESC);
+CREATE INDEX idx_query_analytics_model ON query_analytics(model);
 ```
 
 ---
 
-## 3. API Specifications
-
-### 3.1 Base Configuration
-- **Base URL**: `http://localhost:5000/api/v1`
-- **Authentication**: Bearer Token (JWT)
-- **Content-Type**: `application/json`
-- **Rate Limiting**: 100 requests/minute per user
-
-### 3.2 Authentication Endpoints
-
-#### POST /auth/register
-Register a new user.
-
-**Request:**
-```json
-{
-  "username": "john_doe",
-  "email": "john@example.com",
-  "password": "SecurePass123!"
-}
-```
-
-**Response (201):**
-```json
-{
-  "success": true,
-  "data": {
-    "user_id": "uuid-here",
-    "username": "john_doe",
-    "email": "john@example.com",
-    "api_key": "generated-api-key"
-  },
-  "message": "User registered successfully"
-}
-```
-
-#### POST /auth/login
-Authenticate user and get JWT token.
-
-**Request:**
-```json
-{
-  "email": "john@example.com",
-  "password": "SecurePass123!"
-}
-```
-
-**Response (200):**
-```json
-{
-  "success": true,
-  "data": {
-    "access_token": "jwt-token-here",
-    "refresh_token": "refresh-token-here",
-    "token_type": "Bearer",
-    "expires_in": 3600,
-    "user": {
-      "id": "uuid-here",
-      "username": "john_doe",
-      "email": "john@example.com"
-    }
-  }
-}
-```
-
-### 3.3 Document Management Endpoints
-
-#### POST /documents/upload
-Upload a document for processing.
-
-**Request (multipart/form-data):**
-```
-file: <file-data>
-metadata: {
-  "title": "My Document",
-  "tags": ["research", "AI"]
-}
-```
-
-**Response (202):**
-```json
-{
-  "success": true,
-  "data": {
-    "document_id": "uuid-here",
-    "filename": "document.pdf",
-    "status": "processing",
-    "estimated_time": 30
-  },
-  "message": "Document uploaded and processing started"
-}
-```
-
-#### GET /documents
-List all documents for the authenticated user.
-
-**Query Parameters:**
-- `page` (default: 1)
-- `limit` (default: 20)
-- `status` (optional: all, processing, completed, failed)
-- `sort_by` (default: created_at)
-- `order` (default: desc)
-
-**Response (200):**
-```json
-{
-  "success": true,
-  "data": {
-    "documents": [
-      {
-        "id": "uuid-here",
-        "filename": "document.pdf",
-        "file_type": "application/pdf",
-        "file_size": 1024000,
-        "status": "completed",
-        "num_chunks": 150,
-        "num_pages": 20,
-        "created_at": "2025-11-16T10:00:00Z",
-        "updated_at": "2025-11-16T10:05:00Z"
-      }
-    ],
-    "pagination": {
-      "page": 1,
-      "limit": 20,
-      "total": 45,
-      "pages": 3
-    }
-  }
-}
-```
-
-#### GET /documents/{document_id}
-Get document details.
-
-**Response (200):**
-```json
-{
-  "success": true,
-  "data": {
-    "id": "uuid-here",
-    "filename": "document.pdf",
-    "file_type": "application/pdf",
-    "file_size": 1024000,
-    "status": "completed",
-    "num_chunks": 150,
-    "num_pages": 20,
-    "metadata": {
-      "title": "My Document",
-      "author": "John Doe",
-      "created_date": "2025-01-01"
-    },
-    "vector_index": {
-      "id": "uuid-here",
-      "type": "faiss",
-      "dimension": 1536,
-      "num_vectors": 150
-    },
-    "created_at": "2025-11-16T10:00:00Z"
-  }
-}
-```
-
-#### DELETE /documents/{document_id}
-Delete a document and its associated data.
-
-**Response (200):**
-```json
-{
-  "success": true,
-  "message": "Document deleted successfully"
-}
-```
-
-### 3.4 Chat Endpoints
-
-#### POST /chat/sessions
-Create a new chat session.
-
-**Request:**
-```json
-{
-  "document_ids": ["uuid-1", "uuid-2"],
-  "title": "Research Discussion",
-  "config": {
-    "model": "gpt-4",
-    "temperature": 0.7,
-    "top_k": 5,
-    "use_reranking": true
-  }
-}
-```
-
-**Response (201):**
-```json
-{
-  "success": true,
-  "data": {
-    "session_id": "uuid-here",
-    "title": "Research Discussion",
-    "created_at": "2025-11-16T10:00:00Z"
-  }
-}
-```
-
-#### POST /chat/query
-Ask a question (supports streaming).
-
-**Request:**
-```json
-{
-  "session_id": "uuid-here",
-  "query": "What are the main findings?",
-  "stream": true,
-  "config": {
-    "model": "gpt-4",
-    "temperature": 0.7,
-    "max_tokens": 500,
-    "top_k": 5
-  }
-}
-```
-
-**Response (200) - Non-streaming:**
-```json
-{
-  "success": true,
-  "data": {
-    "message_id": "uuid-here",
-    "answer": "The main findings are...",
-    "sources": [
-      {
-        "document_id": "uuid-here",
-        "document_name": "research.pdf",
-        "page": 5,
-        "chunk_text": "relevant excerpt...",
-        "score": 0.92
-      }
-    ],
-    "metadata": {
-      "model": "gpt-4",
-      "tokens_used": 450,
-      "cost": 0.0023,
-      "latency_ms": 1250
-    }
-  }
-}
-```
-
-**Response (200) - Streaming (SSE):**
-```
-event: start
-data: {"message_id": "uuid-here"}
-
-event: token
-data: {"token": "The"}
-
-event: token
-data: {"token": " main"}
-
-event: sources
-data: {"sources": [...]}
-
-event: end
-data: {"metadata": {...}}
-```
-
-#### GET /chat/sessions/{session_id}/history
-Get chat history for a session.
-
-**Response (200):**
-```json
-{
-  "success": true,
-  "data": {
-    "session_id": "uuid-here",
-    "messages": [
-      {
-        "id": "msg-uuid-1",
-        "role": "user",
-        "content": "What are the main findings?",
-        "created_at": "2025-11-16T10:00:00Z"
-      },
-      {
-        "id": "msg-uuid-2",
-        "role": "assistant",
-        "content": "The main findings are...",
-        "sources": [...],
-        "metadata": {
-          "tokens_used": 450,
-          "cost": 0.0023
-        },
-        "created_at": "2025-11-16T10:00:05Z"
-      }
-    ]
-  }
-}
-```
-
-### 3.5 Model Management Endpoints
-
-#### GET /models/available
-List all available LLM models.
-
-**Response (200):**
-```json
-{
-  "success": true,
-  "data": {
-    "cloud_models": [
-      {
-        "id": "gpt-4-turbo",
-        "provider": "openai",
-        "name": "GPT-4 Turbo",
-        "context_window": 128000,
-        "cost_per_1k_tokens": 0.01,
-        "available": true
-      }
-    ],
-    "local_models": [
-      {
-        "id": "llama3:8b",
-        "provider": "ollama",
-        "name": "Llama 3 8B",
-        "context_window": 8192,
-        "cost_per_1k_tokens": 0,
-        "available": true
-      }
-    ]
-  }
-}
-```
-
-#### POST /models/ollama/pull
-Download a model from Ollama registry.
-
-**Request:**
-```json
-{
-  "model": "llama3:8b"
-}
-```
-
-**Response (202):**
-```json
-{
-  "success": true,
-  "message": "Model download started",
-  "data": {
-    "job_id": "uuid-here",
-    "status": "downloading"
-  }
-}
-```
-
-### 3.6 Health & Monitoring Endpoints
-
-#### GET /health
-System health check.
-
-**Response (200):**
-```json
-{
-  "status": "healthy",
-  "timestamp": "2025-11-16T10:00:00Z",
-  "services": {
-    "database": {
-      "status": "up",
-      "latency_ms": 5
-    },
-    "redis": {
-      "status": "up",
-      "latency_ms": 2
-    },
-    "vector_store": {
-      "status": "up",
-      "count": 1500
-    },
-    "ollama": {
-      "status": "up",
-      "models": 3
-    }
-  },
-  "version": "2.0.0"
-}
-```
-
----
-
-## 4. Module Designs
+## 3. Core Module Designs
 
 ### 4.1 Document Service (`document_service.py`)
 

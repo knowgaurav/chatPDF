@@ -3,339 +3,367 @@
 ## 1. System Overview
 
 ### 1.1 Purpose
-Transform the basic chatPDF application into an enterprise-grade document question-answering system with:
-- Advanced RAG (Retrieval-Augmented Generation) capabilities
-- Multi-LLM support (Cloud & Local models)
-- Modern web interface
-- RESTful API backend
-- Multi-user support with session management
-- Production-ready deployment
+Transform the basic chatPDF application into an **LLM and RAG-focused** document question-answering system with:
+- **Advanced RAG techniques** (Retrieval-Augmented Generation)
+- **Multi-LLM support** (Cloud & Local models)
+- **Simple, functional interface** (Streamlit)
+- **Focus on AI/ML concepts** rather than infrastructure
 
 ### 1.2 Key Features
-- **Multi-format Document Support**: PDF, DOCX, TXT, Markdown, HTML
-- **Advanced RAG Pipeline**: Hybrid search, re-ranking, multi-query retrieval
-- **Local & Cloud LLMs**: OpenAI, Ollama, HuggingFace, LlamaCPP
+- **Multi-format Document Support**: PDF, DOCX, TXT, Markdown
+- **Advanced RAG Pipeline**: Hybrid search, re-ranking, multi-query retrieval, contextual compression
+- **Local & Cloud LLMs**: OpenAI, Ollama, HuggingFace
+- **Multiple Embedding Models**: OpenAI, HuggingFace, Local embeddings
 - **Conversational Memory**: Context-aware multi-turn conversations
 - **Document Management**: Upload, delete, organize documents
 - **Source Attribution**: Citations with page/paragraph references
 - **Cost Tracking**: Monitor API usage and costs
-- **Multi-user Support**: User sessions and document isolation
 - **Real-time Streaming**: Stream responses for better UX
+- **Comparison Tools**: Compare different LLMs and RAG strategies
 
 ---
 
 ## 2. System Architecture
 
-### 2.1 Architecture Diagram
+### 2.1 Simplified Architecture Diagram
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                         CLIENT LAYER                             │
-│  ┌──────────────────┐              ┌──────────────────┐         │
-│  │   React Frontend │              │  Streamlit UI    │         │
-│  │   (TypeScript)   │              │  (Alternative)   │         │
-│  └──────────────────┘              └──────────────────┘         │
-└────────────────┬──────────────────────────┬─────────────────────┘
-                 │                          │
-                 │     REST API (HTTP/WS)   │
-                 │                          │
-┌────────────────┴──────────────────────────┴─────────────────────┐
-│                      API GATEWAY LAYER                           │
-│  ┌────────────────────────────────────────────────────────┐     │
-│  │              Flask Application (Backend)                │     │
-│  │  - Authentication & Authorization                       │     │
-│  │  - Request Validation                                   │     │
-│  │  - Rate Limiting                                        │     │
-│  │  - CORS Handling                                        │     │
-│  └────────────────────────────────────────────────────────┘     │
-└──────────────────────────────┬──────────────────────────────────┘
-                               │
-┌──────────────────────────────┴──────────────────────────────────┐
-│                      SERVICE LAYER                               │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐          │
-│  │   Document   │  │     RAG      │  │     LLM      │          │
-│  │   Service    │  │   Service    │  │   Service    │          │
-│  └──────────────┘  └──────────────┘  └──────────────┘          │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐          │
-│  │   Vector     │  │    Chat      │  │   Embedding  │          │
-│  │   Service    │  │   Service    │  │   Service    │          │
-│  └──────────────┘  └──────────────┘  └──────────────┘          │
-└──────────────────────────────┬──────────────────────────────────┘
-                               │
-┌──────────────────────────────┴──────────────────────────────────┐
-│                      DATA LAYER                                  │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐          │
-│  │  PostgreSQL  │  │    FAISS     │  │   ChromaDB   │          │
-│  │  (Metadata)  │  │  (Vectors)   │  │  (Optional)  │          │
-│  └──────────────┘  └──────────────┘  └──────────────┘          │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐          │
-│  │    Redis     │  │  File System │  │    S3/Blob   │          │
-│  │   (Cache)    │  │  (Documents) │  │  (Optional)  │          │
-│  └──────────────┘  └──────────────┘  └──────────────┘          │
-└──────────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────┐
+│                    PRESENTATION LAYER                         │
+│                  ┌──────────────────┐                        │
+│                  │  Streamlit UI    │                        │
+│                  │  - Chat Interface │                        │
+│                  │  - Doc Upload    │                        │
+│                  │  - Settings      │                        │
+│                  └──────────────────┘                        │
+└─────────────────────────┬────────────────────────────────────┘
+                          │
+┌─────────────────────────┴────────────────────────────────────┐
+│                 CORE SERVICE LAYER (Python)                   │
+│  ┌────────────┐  ┌────────────┐  ┌─────────────┐            │
+│  │  Document  │  │    RAG     │  │     LLM     │            │
+│  │  Service   │  │  Service   │  │   Service   │            │
+│  │            │  │  ┌──────┐  │  │ ┌─────────┐ │            │
+│  │ • Extract  │  │  │Hybrid│  │  │ │ OpenAI  │ │            │
+│  │ • Chunk    │  │  │Search│  │  │ │ Ollama  │ │            │
+│  │ • Process  │  │  │Rerank│  │  │ │HuggingFace│           │
+│  └────────────┘  │  └──────┘  │  │ └─────────┘ │            │
+│                  │             │  └─────────────┘            │
+│  ┌────────────┐  └─────────────┘                             │
+│  │  Vector    │  ┌────────────┐  ┌─────────────┐            │
+│  │  Service   │  │   Chat     │  │  Embedding  │            │
+│  │            │  │  Service   │  │   Service   │            │
+│  │ • Embed    │  │            │  │             │            │
+│  │ • Search   │  │ • Memory   │  │ • OpenAI   │            │
+│  │ • Index    │  │ • History  │  │ • HF Models│            │
+│  └────────────┘  └────────────┘  └─────────────┘            │
+└─────────────────────────┬────────────────────────────────────┘
+                          │
+┌─────────────────────────┴────────────────────────────────────┐
+│                      DATA LAYER                               │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐       │
+│  │    SQLite    │  │    FAISS     │  │  File System │       │
+│  │  (Metadata)  │  │  (Vectors)   │  │  (Documents) │       │
+│  │              │  │              │  │              │       │
+│  │ • Documents  │  │ • Embeddings │  │ • PDFs       │       │
+│  │ • Chat       │  │ • Indices    │  │ • DOCX       │       │
+│  │ • Analytics  │  │              │  │ • TXT        │       │
+│  └──────────────┘  └──────────────┘  └──────────────┘       │
+└──────────────────────────────────────────────────────────────┘
 
-┌──────────────────────────────────────────────────────────────────┐
-│                      EXTERNAL SERVICES                            │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐          │
-│  │   OpenAI     │  │    Ollama    │  │ HuggingFace  │          │
-│  │     API      │  │   (Local)    │  │     API      │          │
-│  └──────────────┘  └──────────────┘  └──────────────┘          │
-└──────────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────┐
+│                    EXTERNAL LLM SERVICES                      │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐       │
+│  │   OpenAI     │  │    Ollama    │  │ HuggingFace  │       │
+│  │     API      │  │   (Local)    │  │     Hub      │       │
+│  └──────────────┘  └──────────────┘  └──────────────┘       │
+└──────────────────────────────────────────────────────────────┘
 ```
 
 ### 2.2 Component Responsibilities
 
-#### 2.2.1 Frontend Layer
-- **React Application**:
-  - Modern, responsive UI with TypeScript
+#### 2.2.1 Presentation Layer (Streamlit)
+- **Simple, Functional UI**:
   - Document upload with drag-n-drop
   - Chat interface with streaming responses
-  - Document viewer with source highlighting
-  - Settings panel for LLM/RAG configuration
-  - Analytics dashboard
+  - Source highlighting and citations
+  - Settings panel for:
+    - LLM selection (OpenAI, Ollama, HuggingFace)
+    - Embedding model selection
+    - RAG strategy configuration (hybrid search, re-ranking, etc.)
+    - Temperature, top_k, chunk size parameters
+  - Side-by-side LLM comparison
+  - Cost and token usage tracking
+  - Chat history viewer
 
-- **Streamlit Alternative**:
-  - Quick prototyping and demos
-  - Simpler deployment option
-  - Less customization
-
-#### 2.2.2 API Gateway (Flask Backend)
-- **Core Responsibilities**:
-  - HTTP request routing
-  - WebSocket for streaming
-  - Input validation & sanitization
-  - Authentication (JWT tokens)
-  - Session management
-  - Error handling & logging
-  - Rate limiting & throttling
-  - API documentation (Swagger/OpenAPI)
-
-#### 2.2.3 Service Layer
+#### 2.2.2 Core Service Layer
 
 **Document Service**:
-- Document upload/download/delete
-- Format detection and validation
-- Text extraction (PDF, DOCX, TXT, etc.)
-- Document preprocessing
+- Document upload/delete
+- Format detection (PDF, DOCX, TXT, MD)
+- Text extraction using PyPDF2, python-docx
+- Document preprocessing and cleaning
+- **Chunking strategies**:
+  - RecursiveCharacterTextSplitter (default)
+  - SemanticChunker (split by meaning)
+  - Token-based splitting
 - Metadata extraction
-- Document versioning
 
-**RAG Service**:
-- Advanced retrieval strategies
-- Hybrid search (semantic + keyword)
-- Multi-query retrieval
-- Contextual compression
-- Re-ranking with cross-encoders
-- Source attribution
+**RAG Service** (Focus Area):
+- **Hybrid Search**: Combine semantic + keyword (BM25)
+- **Multi-Query Retrieval**: Generate multiple search variations
+- **Re-ranking**: Cross-encoder scoring for relevance
+- **Contextual Compression**: Remove irrelevant text
+- **Query Decomposition**: Break complex queries into sub-queries
+- **Source Attribution**: Track and cite sources
+- **Configurable Strategies**: Switch between different RAG approaches
 
-**LLM Service**:
-- Multi-provider support (OpenAI, Ollama, HF)
-- Model selection and routing
-- Prompt engineering
-- Response streaming
-- Fallback mechanisms
-- Cost tracking
+**LLM Service** (Focus Area):
+- **Multi-Provider Support**:
+  - OpenAI (GPT-4, GPT-3.5)
+  - Ollama (Llama 3, Mistral, CodeLlama, etc.)
+  - HuggingFace (any model from hub)
+- **Prompt Engineering**: Templates for different tasks
+- **Response Streaming**: Real-time token generation
+- **Model Comparison**: Run same query on multiple models
+- **Cost Tracking**: Track tokens and API costs
+- **Fallback**: Auto-switch on failures
 
-**Vector Service**:
-- Embedding generation
-- Vector store management (FAISS/ChromaDB)
-- Similarity search
-- Index optimization
-- Batch processing
+**Vector Service** (Focus Area):
+- **Embedding Generation**:
+  - OpenAI embeddings
+  - HuggingFace models (all-MiniLM, BGE, etc.)
+  - Local sentence transformers
+- **Vector Stores**: FAISS for fast similarity search
+- **Similarity Search**: Cosine, L2, dot product
+- **Index Optimization**: IVF, HNSW for large datasets
+- **Batch Processing**: Efficient bulk embedding
 
 **Chat Service**:
-- Conversation management
-- Chat history storage
+- **Conversation Memory**:
+  - Buffer memory (recent N messages)
+  - Summary memory (LLM-generated summaries)
+  - Window memory (sliding context)
+- Chat history storage (SQLite)
 - Context window management
-- Multi-turn dialogue handling
-- Memory strategies (buffer, summary, knowledge graph)
+- Multi-turn dialogue support
 
-**Embedding Service**:
-- Multiple embedding models
-- OpenAI embeddings
-- HuggingFace embeddings
-- Local embeddings (all-MiniLM, BGE, etc.)
-- Embedding caching
+**Embedding Service** (Focus Area):
+- **Compare Embedding Models**:
+  - OpenAI text-embedding-ada-002
+  - HuggingFace all-MiniLM-L6-v2
+  - sentence-transformers/all-mpnet-base-v2
+  - BAAI/bge-small-en-v1.5
+- Model performance comparison
+- Dimension reduction techniques
+- Embedding visualization (optional)
 
-#### 2.2.4 Data Layer
+#### 2.2.3 Data Layer
 
-**PostgreSQL**:
-- User accounts
+**SQLite** (Simple local database):
 - Document metadata
 - Chat history
-- Session data
-- Usage analytics
-- System configuration
+- Usage analytics (tokens, cost)
+- Configuration settings
 
-**Vector Stores**:
-- FAISS: Fast similarity search
-- ChromaDB: Alternative with built-in persistence
-- Index persistence and loading
+**FAISS** (Vector similarity search):
+- Fast similarity search
+- Index persistence (saved as .index files)
+- Supports large-scale vector search
+- Minimal memory footprint
 
-**Redis**:
-- Session caching
-- Rate limiting counters
-- Temporary embeddings cache
-- Real-time analytics
-
-**File System / Object Storage**:
-- Document storage (local or S3-compatible)
-- Vector index files
-- Model cache
-- Logs
+**File System**:
+- Document storage (data/uploads/)
+- Vector index files (data/vector_stores/)
+- Model cache (data/models/)
+- Logs (logs/)
 
 ---
 
 ## 3. Technology Stack
 
-### 3.1 Backend
+### 3.1 Core Python Stack
 | Component | Technology | Purpose |
 |-----------|-----------|---------|
-| **Web Framework** | Flask 3.0+ | REST API, lightweight, flexible |
-| **WSGI Server** | Gunicorn | Production server |
-| **Database** | PostgreSQL 15+ | Relational data storage |
+| **Framework** | Streamlit 1.35+ | Simple, functional UI |
+| **Database** | SQLite 3 | Lightweight local storage |
 | **ORM** | SQLAlchemy 2.0+ | Database abstraction |
-| **Cache** | Redis 7+ | Session & data caching |
-| **Task Queue** | Celery (optional) | Async document processing |
-| **Validation** | Pydantic | Request/response validation |
+| **Validation** | Pydantic | Data validation |
 
-### 3.2 AI/ML Stack
+### 3.2 LLM & RAG Stack (Core Focus)
 | Component | Technology | Purpose |
 |-----------|-----------|---------|
-| **LLM Framework** | LangChain 0.3+ | RAG orchestration |
-| **Cloud LLM** | OpenAI GPT-4/3.5 | High-quality responses |
-| **Local LLM** | Ollama (Llama 3, Mistral) | Privacy, cost savings |
-| **Embeddings** | OpenAI, HuggingFace, Local | Semantic search |
-| **Vector Store** | FAISS, ChromaDB | Similarity search |
-| **Re-ranker** | Cross-encoders (HF) | Result refinement |
+| **LLM Framework** | LangChain 0.3+ | RAG orchestration & chains |
+| **Cloud LLM** | OpenAI (GPT-4, GPT-3.5) | High-quality responses |
+| **Local LLM** | Ollama (Llama 3, Mistral, etc.) | Privacy, zero-cost inference |
+| **Alternative LLM** | HuggingFace Transformers | Any OSS model |
+| **Embeddings** | OpenAI, sentence-transformers | Semantic representations |
+| **Vector Store** | FAISS | Fast similarity search |
+| **Keyword Search** | rank-bm25 | Traditional IR |
+| **Re-ranker** | sentence-transformers cross-encoders | Result refinement |
+| **Token Counter** | tiktoken | Accurate token counting |
 
-### 3.3 Frontend
+### 3.3 Document Processing
 | Component | Technology | Purpose |
 |-----------|-----------|---------|
-| **Framework** | React 18+ | Modern UI |
-| **Language** | TypeScript | Type safety |
-| **Build Tool** | Vite | Fast development |
-| **Styling** | Tailwind CSS | Utility-first CSS |
-| **State Management** | Zustand/Redux | Global state |
-| **HTTP Client** | Axios | API communication |
-| **Alternative** | Streamlit 1.35+ | Rapid prototyping |
+| **PDF** | PyPDF2 3.0+ | PDF text extraction |
+| **Word Docs** | python-docx 1.1+ | DOCX processing |
+| **Text Splitting** | LangChain TextSplitters | Smart chunking |
+| **Text Processing** | NLTK, spaCy (optional) | Advanced NLP |
 
-### 3.4 DevOps
+### 3.4 Development & Deployment
 | Component | Technology | Purpose |
 |-----------|-----------|---------|
-| **Containerization** | Docker | Consistent environments |
-| **Orchestration** | Docker Compose | Multi-container setup |
-| **CI/CD** | GitHub Actions | Automated testing/deployment |
-| **Monitoring** | Prometheus + Grafana | Performance monitoring |
-| **Logging** | Python logging + ELK stack | Centralized logging |
+| **Package Manager** | pip | Dependency management |
+| **Environment** | python-dotenv | Config management |
+| **Testing** | pytest | Unit/integration tests |
+| **Logging** | Python logging | Debug & monitoring |
+| **Containerization** | Docker (optional) | Easy deployment |
 
 ---
 
-## 4. Data Flow
+## 4. Data Flow (Simplified)
 
 ### 4.1 Document Upload & Indexing Flow
 ```
-User uploads document
+User uploads document via Streamlit
         ↓
-Frontend validates file (type, size)
+Validate file (type, size)
         ↓
-POST /api/documents/upload
+Save to data/uploads/
         ↓
-Flask API validates & saves file
+DocumentService: Extract text (PyPDF2, python-docx)
         ↓
-Extract text (PyPDF2, docx, etc.)
+DocumentService: Chunk text
+  - RecursiveCharacterTextSplitter (default)
+  - Or SemanticChunker
+  - Or Token-based splitter
         ↓
-Chunk text (RecursiveCharacterTextSplitter)
+EmbeddingService: Generate embeddings
+  - User chooses: OpenAI / HuggingFace / Local
         ↓
-Generate embeddings (OpenAI/Local)
+VectorService: Create FAISS index
         ↓
-Store in vector database (FAISS/ChromaDB)
+VectorService: Save index to data/vector_stores/
         ↓
-Save metadata to PostgreSQL
+Save metadata to SQLite (documents table)
         ↓
-Return document_id to client
+Display success + document stats to user
 ```
 
-### 4.2 Question Answering Flow
+### 4.2 Advanced RAG Query Flow (Core Feature)
 ```
-User asks question
+User asks question in chat interface
         ↓
-POST /api/chat/query
+Load conversation history from SQLite
         ↓
-Load conversation history (PostgreSQL)
+RAGService: Multi-Query Generation
+  - Original query
+  - 2-3 rephrased variations using LLM
         ↓
-Generate search queries (multi-query)
+RAGService: Hybrid Search
+  ├─> VectorService: Semantic search (FAISS)
+  │   - Embed query
+  │   - Find top-K similar chunks
+  └─> SearchService: Keyword search (BM25)
+      - TF-IDF weighted keyword matching
         ↓
-Hybrid search:
-  - Semantic search (vector similarity)
-  - Keyword search (BM25)
+RAGService: Merge results
+  - Reciprocal Rank Fusion (RRF)
+  - Combine semantic + keyword scores
         ↓
-Merge and deduplicate results
+RAGService: Re-ranking (if enabled)
+  - Cross-encoder scores query-chunk pairs
+  - Keep top 5-10 most relevant
         ↓
-Re-rank with cross-encoder
+RAGService: Contextual Compression (if enabled)
+  - Remove irrelevant sentences
+  - Extract only relevant portions
         ↓
-Contextual compression
+LLMService: Build prompt with context
+  - System prompt + retrieved chunks + query
         ↓
-Build prompt with context
-        ↓
-Call LLM (streaming)
+LLMService: Generate answer (streaming)
+  - User's selected model (OpenAI / Ollama / HF)
+  - Stream tokens to UI
         ↓
 Extract source citations
+  - Document name, page number, relevance score
         ↓
-Save to chat history
+Save message to SQLite (chat_history)
         ↓
-Stream response to client (WebSocket/SSE)
+Display streaming answer + sources to user
 ```
 
-### 4.3 Local LLM Query Flow
+### 4.3 Local LLM with Ollama Flow
 ```
-User selects local model (Ollama)
+User selects "Ollama" provider in settings
         ↓
-Check if Ollama is running
+LLMService: Check Ollama availability
+  - HTTP GET http://localhost:11434/api/tags
         ↓
-If not: Show installation instructions
+If Ollama not running:
+  - Display installation instructions
+  - Link to ollama.ai
         ↓
-If yes: List available models
+If Ollama running:
+  - List available models (llama3, mistral, etc.)
+  - Display model info (size, params)
         ↓
-User selects model (llama3, mistral, etc.)
+User selects model and asks question
         ↓
-Send query to Ollama API (localhost:11434)
+LLMService: Send to Ollama
+  - POST http://localhost:11434/api/generate
+  - Stream: true
         ↓
-Stream response back to user
+Stream tokens to UI (zero cost!)
+        ↓
+Display answer with "Model: llama3:8b (local)"
 ```
 
 ---
 
 ## 5. Key Design Decisions
 
-### 5.1 Why Flask over FastAPI?
-- **Pros**: Mature ecosystem, simpler learning curve, extensive documentation
-- **Cons**: FastAPI has native async support
-- **Decision**: Flask with proper structure; can migrate to FastAPI later if needed
+### 5.1 Why Streamlit over Flask/React?
+- **Focus on LLM concepts, not web development**
+- **Rapid prototyping**: Build UI in minutes
+- **Built-in widgets**: File upload, sliders, selectboxes
+- **Automatic re-runs**: No need for state management
+- **Decision**: Streamlit for simplicity and speed
 
-### 5.2 Vector Store: FAISS vs ChromaDB
-- **FAISS**:
-  - Pros: Extremely fast, battle-tested, Facebook-backed
-  - Cons: Requires manual persistence
-- **ChromaDB**:
-  - Pros: Built-in persistence, easier to use, metadata filtering
-  - Cons: Slightly slower
-- **Decision**: Support both, default to FAISS for speed
+### 5.2 Why FAISS for Vector Storage?
+- **Speed**: Extremely fast similarity search (Facebook-built)
+- **Scalability**: Handles millions of vectors
+- **No server required**: Just save/load index files
+- **Lightweight**: Minimal dependencies
+- **Decision**: FAISS as primary, focus on optimizing search
 
 ### 5.3 Local LLM Strategy
-- **Primary**: Ollama (easiest setup, good performance)
-- **Secondary**: LlamaCPP (more control, GGUF support)
-- **Tertiary**: HuggingFace Transformers (most flexible)
-- **Decision**: Implement Ollama first, add others as plugins
+- **Primary**: Ollama (easiest setup, one-command install)
+- **Why Ollama**:
+  - Simple API (HTTP REST)
+  - Auto-handles model downloads
+  - Optimized inference
+  - Supports most popular models
+- **Secondary**: HuggingFace Transformers (more model variety)
+- **Decision**: Implement Ollama first, focus on ease of use
 
-### 5.4 Frontend: React vs Streamlit
-- **React**: Production-grade, full control, better UX
-- **Streamlit**: Faster development, easier maintenance
-- **Decision**: Build both, React as primary, Streamlit as alternative
+### 5.4 Database: SQLite Only
+- **Why SQLite**:
+  - Zero configuration
+  - Single file database
+  - Perfect for local/personal use
+  - Built into Python
+- **No need for PostgreSQL**: Not building multi-user system
+- **Decision**: SQLite for all storage needs
 
-### 5.5 Database Choice
-- **SQLite**: Good for development, single-file
-- **PostgreSQL**: Production-ready, better concurrency
-- **Decision**: SQLite for dev, PostgreSQL for production
+### 5.5 No Authentication Layer
+- **Reasoning**:
+  - Single-user local application
+  - Focus on RAG/LLM concepts, not security
+  - Simplifies architecture significantly
+  - Faster development
+- **Decision**: Skip auth, focus on core AI features
 
 ---
 
@@ -376,199 +404,169 @@ Track and return:
 
 ---
 
-## 7. Security Considerations
+## 7. Performance Optimization (LLM-Focused)
 
-### 7.1 Authentication & Authorization
-- JWT-based authentication
-- Role-based access control (RBAC)
-- API key management for services
-- Session timeout and refresh
+### 7.1 LLM Optimization
+- **Model Quantization**: Use 4-bit/8-bit quantized models for local LLMs
+- **Streaming**: Always stream responses for better perceived performance
+- **Caching**: Cache embeddings for frequently used text
+- **Batch Processing**: Generate embeddings in batches
 
-### 7.2 Data Security
-- File upload validation (type, size, content)
-- Sanitize file names and content
-- Encrypt sensitive data at rest
-- Use environment variables for secrets
-- Rate limiting per user/IP
+### 7.2 Vector Search Optimization
+- **Index Selection**: IVF for large datasets, Flat for small
+- **Dimension Reduction**: Optionally reduce embedding dimensions
+- **Memory Mapping**: Use memory-mapped FAISS indices for large collections
+- **Top-K Tuning**: Adjust retrieval count based on needs
 
-### 7.3 API Security
-- CORS configuration
-- Input validation and sanitization
-- SQL injection prevention (ORM)
-- XSS protection
-- CSRF tokens for state-changing operations
+### 7.3 RAG Pipeline Optimization
+- **Lazy Re-ranking**: Only re-rank when needed
+- **Compression**: Enable contextual compression to reduce LLM tokens
+- **Parallel Search**: Run semantic + keyword search in parallel
+- **Smart Chunking**: Tune chunk size/overlap for your documents
 
 ---
 
-## 8. Scalability Considerations
+## 8. Simple Deployment
 
-### 8.1 Horizontal Scaling
-- Stateless API servers (scale with load balancer)
-- Separate vector search service
-- Database connection pooling
-- Redis for distributed caching
+### 8.1 Local Development
+```bash
+# 1. Install dependencies
+pip install -r requirements.txt
 
-### 8.2 Performance Optimization
-- Lazy loading of models
-- Batch embedding generation
-- Vector index optimization (IVF, HNSW)
-- Response caching for common queries
-- CDN for static assets
+# 2. Install Ollama (optional, for local LLMs)
+curl https://ollama.ai/install.sh | sh
+ollama pull llama3
 
-### 8.3 Resource Management
-- Model quantization (4-bit, 8-bit)
-- GPU acceleration when available
-- Memory-mapped vector indices
-- Streaming for large responses
+# 3. Set up environment
+cp .env.example .env
+# Edit .env with your OpenAI API key (if using)
 
----
-
-## 9. Deployment Architecture
-
-### 9.1 Development Environment
-```yaml
-Services:
-  - Flask (port 5000)
-  - React Dev Server (port 5173)
-  - PostgreSQL (port 5432)
-  - Redis (port 6379)
-  - Ollama (port 11434)
+# 4. Run application
+streamlit run app.py
 ```
 
-### 9.2 Production Environment
+### 8.2 Docker Deployment (Optional)
 ```yaml
-Load Balancer (Nginx/Traefik)
-    ↓
-Flask App (Gunicorn, 4 workers)
-    ↓
-├── PostgreSQL (managed service)
-├── Redis (managed service)
-├── S3 (document storage)
-└── Ollama (dedicated GPU server)
+# docker-compose.yml
+services:
+  chatpdf:
+    build: .
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./data:/app/data
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+
+  ollama:
+    image: ollama/ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama:/root/.ollama
 ```
 
-### 9.3 Docker Compose Setup
-- Multi-stage builds for optimization
-- Separate containers for each service
-- Named volumes for persistence
-- Health checks for all services
-- Auto-restart policies
+---
+
+## 9. Logging & Monitoring (Simple)
+
+### 9.1 Key Metrics to Track
+- **Token usage and API costs** (per query)
+- **Query latency** (document processing, embedding, LLM generation)
+- **Retrieval quality** (relevance scores, sources found)
+- **Model comparison** (accuracy, cost, speed)
+
+### 9.2 Simple Logging
+- **Python logging** to file and console
+- **Log Levels**: INFO for queries, DEBUG for detailed RAG steps
+- **Cost Tracking**: Log every OpenAI API call with tokens/cost
+- **Error Handling**: Graceful fallbacks for missing models/services
 
 ---
 
-## 10. Monitoring & Observability
+## 10. Future LLM/RAG Enhancements
 
-### 10.1 Metrics to Track
-- Request latency (p50, p95, p99)
-- Error rates by endpoint
-- Token usage and costs
-- Vector search performance
-- Database query performance
-- Cache hit rates
+### 10.1 Advanced RAG Techniques
+- **Parent Document Retrieval**: Retrieve small chunks, return larger context
+- **Hypothetical Document Embeddings (HyDE)**: Generate hypothetical answers, search with them
+- **Query Routing**: Route different query types to specialized retrievers
+- **Self-Querying**: Extract filters from natural language queries
+- **Ensemble Retrievers**: Combine multiple retrieval strategies
 
-### 10.2 Logging Strategy
-- Structured logging (JSON format)
-- Log levels: DEBUG, INFO, WARNING, ERROR
-- Request/response logging
-- Error stack traces
-- Audit logs for sensitive operations
+### 10.2 Multi-Modal RAG
+- **Image Extraction**: Extract and describe images from PDFs
+- **Table Understanding**: Parse and query tables
+- **Document Layout**: Use visual structure for better chunking
+- **Vision-Language Models**: Use models like GPT-4V, LLaVA
 
-### 10.3 Health Checks
-- `/health` endpoint
-- Database connectivity
-- Redis connectivity
-- Vector store status
-- LLM service availability
-- Disk space monitoring
+### 10.3 Advanced LLM Features
+- **Fine-Tuning**: Fine-tune local models on your documents
+- **Prompt Optimization**: A/B test different prompts
+- **Agent Workflows**: Multi-step reasoning with LangChain agents
+- **Tool Use**: Let LLM call functions (calculators, search, etc.)
+- **Mixture of Models**: Route different tasks to specialized models
 
----
-
-## 11. Future Enhancements
-
-### 11.1 Phase 2 Features
-- Multi-modal support (images, tables in PDFs)
-- Voice input/output
-- Document comparison
-- Automatic summarization
-- Knowledge graph integration
-
-### 11.2 Advanced Features
-- Fine-tuned models for domain-specific tasks
-- Active learning for improving retrieval
-- Federated search across multiple sources
-- Collaborative features (shared documents)
-- Advanced analytics and insights
-
-### 11.3 Enterprise Features
-- SSO integration (SAML, OAuth)
-- Audit logging and compliance
-- Data residency controls
-- Custom model deployment
-- SLA monitoring and reporting
+### 10.4 Evaluation & Experimentation
+- **RAG Evaluation**: Implement RAGAS, TruLens for quality metrics
+- **A/B Testing**: Compare different RAG strategies
+- **Ground Truth**: Build test sets with questions/answers
+- **Embedding Comparison**: Benchmark different embedding models
+- **LLM Leaderboard**: Track which models work best for your use case
 
 ---
 
-## 12. Migration Strategy
+## 11. Learning Objectives
 
-### 12.1 From Current System
-1. Keep existing `streamlit_app.py` working
-2. Build new backend in parallel
-3. Migrate one feature at a time
-4. Deprecate old code gradually
-5. Maintain backward compatibility
+This project is designed to teach key LLM concepts:
 
-### 12.2 Data Migration
-- Export existing vector indices
-- Re-index with new chunking strategy
-- Migrate chat history format
-- Update configuration format
+### 11.1 Embeddings
+- How text becomes numbers
+- Semantic vs syntactic similarity
+- Embedding model selection
+- Dimensionality and performance tradeoffs
 
----
+### 11.2 Vector Databases
+- Similarity search algorithms
+- Index types (Flat, IVF, HNSW)
+- Approximate vs exact search
+- Scaling to millions of vectors
 
-## 13. Success Metrics
+### 11.3 RAG Patterns
+- Naive RAG vs Advanced RAG
+- Retrieval strategies
+- Context optimization
+- Handling multi-turn conversations
 
-### 13.1 Technical Metrics
-- Response time < 2s for queries
-- 99.9% uptime
-- Support 100+ concurrent users
-- Index 1000+ documents
-- < $0.01 per query (with local LLMs)
+### 11.4 LLM Integration
+- API vs local models
+- Streaming responses
+- Cost optimization
+- Prompt engineering
+- Context window management
 
-### 13.2 Quality Metrics
-- Answer accuracy > 90%
-- User satisfaction > 4.5/5
-- Retrieval precision > 85%
-- Source attribution accuracy > 95%
-
----
-
-## 14. Documentation Requirements
-
-### 14.1 User Documentation
-- Installation guide
-- User manual with screenshots
-- API documentation (Swagger)
-- Configuration guide
-- Troubleshooting guide
-
-### 14.2 Developer Documentation
-- Architecture overview (this document)
-- Code structure and patterns
-- API reference
-- Testing guidelines
-- Contribution guide
+### 11.5 Production Considerations
+- Latency optimization
+- Cost tracking
+- Error handling
+- Model versioning
 
 ---
 
 ## Conclusion
 
-This HLD provides a comprehensive blueprint for transforming chatPDF into a production-ready, enterprise-grade document Q&A system with advanced RAG capabilities, multi-LLM support, and modern architecture. The design prioritizes:
+This HLD provides a blueprint for transforming chatPDF into an **LLM and RAG-focused** document Q&A system. The design prioritizes:
 
-1. **Modularity**: Easy to extend and maintain
-2. **Scalability**: Handles growth in users and documents
-3. **Flexibility**: Supports multiple LLMs and configurations
-4. **Security**: Enterprise-grade security measures
-5. **Performance**: Optimized for speed and efficiency
-6. **Usability**: Modern, intuitive interface
+1. **Learning Focus**: Understand embeddings, vector search, RAG patterns, and LLM integration
+2. **Simplicity**: Streamlit UI, SQLite database, local files - no complex infrastructure
+3. **Flexibility**: Support multiple LLMs (OpenAI, Ollama, HuggingFace) and embeddings
+4. **Advanced RAG**: Hybrid search, re-ranking, multi-query, contextual compression
+5. **Cost Optimization**: Local LLMs with Ollama for zero-cost inference
+6. **Experimentation**: Compare models, strategies, and configurations
 
-Next step: Create the Low-Level Design (LLD) document with detailed technical specifications.
+**Core Philosophy**:
+- Focus on AI/ML concepts, not web development
+- Keep it simple and educational
+- Make it easy to experiment and learn
+- Prioritize functionality over polish
+
+Next step: Simplify the Low-Level Design (LLD) document with streamlined technical specifications focused on RAG and LLM components.
