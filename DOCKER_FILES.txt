@@ -1,0 +1,85 @@
+Docker Setup - Complete File Structure
+======================================
+
+chatPDF/
+│
+├── Docker Configuration Files
+│   ├── Dockerfile                     # Main application container definition
+│   ├── docker-compose.yml             # Multi-container orchestration
+│   ├── .dockerignore                  # Files to exclude from build context
+│   └── .env.example                   # Environment variable template
+│
+├── Application Configuration
+│   └── src/
+│       ├── __init__.py               # Package initialization
+│       └── config/
+│           ├── __init__.py           # Config package initialization
+│           └── settings.py           # Centralized settings management
+│
+├── Dependencies
+│   └── requirements.txt              # Complete Python dependencies list
+│
+├── Documentation
+│   ├── DOCKER_SETUP.md              # Comprehensive Docker guide
+│   └── DOCKER_SUMMARY.md            # This summary document
+│
+├── Utility Scripts
+│   ├── start-docker.sh              # Convenient startup script (executable)
+│   └── Makefile                     # Task automation commands
+│
+└── Data Directories (created at runtime)
+    ├── data/
+    │   ├── uploads/                 # Document storage
+    │   ├── vector_stores/           # FAISS indices
+    │   ├── models/huggingface/      # HF model cache
+    │   └── chatpdf.db               # SQLite database
+    └── logs/
+        └── app.log                  # Application logs
+
+Docker Volumes
+==============
+- ollama-models                      # Persistent Ollama model storage
+
+Quick Reference Commands
+========================
+
+Setup:
+  cp .env.example .env
+  # Edit .env with your API keys
+  
+Start:
+  docker-compose up                  # Start and show logs
+  docker-compose up -d              # Start in background
+  ./start-docker.sh                 # Use convenience script
+  make up                           # Use Makefile
+
+Stop:
+  docker-compose down               # Stop services
+  make down                         # Stop with Make
+
+Logs:
+  docker-compose logs -f            # Follow all logs
+  docker-compose logs -f chatpdf    # ChatPDF only
+  make logs                         # Using Make
+
+Models:
+  docker exec -it chatpdf-ollama ollama pull llama3:8b
+  make pull-models                  # Download common models
+
+Access Points:
+  http://localhost:8501             # Streamlit UI
+  http://localhost:11434            # Ollama API
+
+File Sizes (Approximate)
+========================
+Dockerfile:              1.1 KB
+docker-compose.yml:      2.5 KB
+.dockerignore:           932 bytes
+.env.example:            5.9 KB
+settings.py:             12.3 KB
+requirements.txt:        ~1 KB
+DOCKER_SETUP.md:         5.4 KB
+start-docker.sh:         3.1 KB
+Makefile:                3.3 KB
+
+Total Docker Setup:      ~35 KB
