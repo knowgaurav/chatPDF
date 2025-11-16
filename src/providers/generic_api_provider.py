@@ -485,5 +485,33 @@ def get_predefined_apis() -> Dict[str, APIConfig]:
             api_format="openai",
             cost_per_1k_input=0.00027,
             cost_per_1k_output=0.00027
+        ),
+        # MegaLLM - Only the requested models
+        "MegaLLM GPT-5 Mini": APIConfig(
+            name="MegaLLM GPT-5 Mini",
+            api_key="",
+            base_url="https://ai.megallm.io/v1",
+            model="gpt-5-mini",
+            api_format="openai",
+            cost_per_1k_input=0.0,  # Update with actual pricing from MegaLLM dashboard
+            cost_per_1k_output=0.0
+        ),
+        "MegaLLM Claude Haiku 4.5": APIConfig(
+            name="MegaLLM Claude Haiku 4.5",
+            api_key="",
+            base_url="https://ai.megallm.io/v1",
+            model="claude-haiku-4-5",  # Verify exact model ID from MegaLLM dashboard
+            api_format="openai",
+            cost_per_1k_input=0.0,  # Update with actual pricing from MegaLLM dashboard
+            cost_per_1k_output=0.0
+        ),
+        "MegaLLM Gemini 2.5 Flash": APIConfig(
+            name="MegaLLM Gemini 2.5 Flash",
+            api_key="",
+            base_url="https://ai.megallm.io/v1",
+            model="gemini-2-5-flash",  # Verify exact model ID from MegaLLM dashboard
+            api_format="openai",
+            cost_per_1k_input=0.0,  # Update with actual pricing from MegaLLM dashboard
+            cost_per_1k_output=0.0
         )
     }
